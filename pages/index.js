@@ -1,7 +1,6 @@
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 
-// Dynamically import components that use client-side features
 const Header = dynamic(() => import('../components/Header'), { ssr: true });
 const ScrapingTool = dynamic(() => import('../components/ScrapingTool'), { ssr: true });
 const Features = dynamic(() => import('../components/Features'), { ssr: true });
@@ -31,7 +30,6 @@ export default function Home() {
       <main>
         <Header />
         
-        {/* Hero Section */}
         <section className="gradient-bg text-white py-20">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
