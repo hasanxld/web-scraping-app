@@ -1,15 +1,11 @@
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 
 export default async function handler(req, res) {
-  // Enable CORS
+  // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -27,21 +23,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Validate URL
-    let urlObj;
-    try {
-      urlObj = new URL(url);
-    } catch (err) {
-      return res.status(400).json({ error: 'Invalid URL format' });
+    // Validate and format URL
+    let targetUrl = url.trim();
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      targetUrl = 'https://' + targetUrl;
     }
 
-    if (!['http:', 'https:'].includes(urlObj.protocol)) {
-      return res.status(400).json({ error: 'Invalid URL protocol. Only HTTP and HTTPS are supported.' });
-    }
+    const urlObj = new URL(targetUrl);
 
-    // Add timeout and better error handling
-    const response = await axios.get(url, {
-      timeout: 15000,
+    // Use server-side fetch with proper headers
+    const response = await fetch(targetUrl, {
+      method: 'GET',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -49,92 +41,107 @@ export default async function handler(req, res) {
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
+        'Cache-Control': 'max-age=0'
       },
-      validateStatus: function (status) {
-        return status >= 200 && status < 400; // Resolve only if the status code is less than 400
-      }
+      // Add timeout
+      signal: AbortSignal.timeout(15000)
     });
 
-    const $ = cheerio.load(response.data);
-    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+
     // Remove unwanted elements
-    $('script, style, noscript, meta, link').remove();
+    $('script, style, noscript, meta, link, svg, iframe, form').remove();
+
+    // Get clean content
+    const title = $('title').text() || 'No title found';
+    const description = $('meta[name="description"]').attr('content') || 'No description found';
     
-    // Get clean HTML
-    const html = $.html();
-    
-    // Extract text content (limited)
-    const text = $('body').text()
+    // Clean text content
+    let text = $('body').text()
       .replace(/\s+/g, ' ')
       .replace(/\n/g, ' ')
       .trim()
-      .substring(0, 10000); // Limit text length
-    
-    // Extract links (limited)
+      .substring(0, 5000);
+
+    // Extract links
     const links = [];
     $('a').each((i, element) => {
-      if (links.length >= 20) return false; // Limit to 20 links
+      if (links.length >= 15) return false;
       const href = $(element).attr('href');
       const text = $(element).text().trim().substring(0, 100);
-      if (href && text && href.startsWith('http')) {
-        links.push({ href, text });
+      if (href && text) {
+        // Convert relative URLs to absolute
+        let absoluteHref = href;
+        if (href.startsWith('/')) {
+          absoluteHref = `${urlObj.origin}${href}`;
+        } else if (href.startsWith('#')) {
+          absoluteHref = `${targetUrl}${href}`;
+        }
+        links.push({ href: absoluteHref, text });
       }
     });
 
-    // Extract images (limited)
+    // Extract images
     const images = [];
     $('img').each((i, element) => {
-      if (images.length >= 10) return false; // Limit to 10 images
+      if (images.length >= 10) return false;
       const src = $(element).attr('src');
       const alt = $(element).attr('alt') || 'No alt text';
       if (src) {
-        images.push({ src, alt });
+        // Convert relative image URLs to absolute
+        let absoluteSrc = src;
+        if (src.startsWith('/')) {
+          absoluteSrc = `${urlObj.origin}${src}`;
+        } else if (src.startsWith('./')) {
+          absoluteSrc = `${urlObj.origin}${src.substring(1)}`;
+        }
+        images.push({ src: absoluteSrc, alt });
       }
     });
 
-    // Get metadata
-    const title = $('title').text() || 'No title found';
-    const description = $('meta[name="description"]').attr('content') || 'No description found';
-    const keywords = $('meta[name="keywords"]').attr('content') || 'No keywords found';
+    // Get cleaned HTML
+    const cleanedHtml = $.html().substring(0, 30000);
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       data: {
-        url,
+        url: targetUrl,
         title,
         description,
-        keywords,
         text,
-        html: html.substring(0, 50000), // Limit HTML size
+        html: cleanedHtml,
         links,
         images,
-        scrapedAt: new Date().toISOString()
+        scrapedAt: new Date().toISOString(),
+        contentLength: text.length
       }
     });
 
   } catch (error) {
     console.error('Scraping error:', error.message);
+
+    // User-friendly error messages
+    let userMessage = 'Failed to scrape website';
     
-    if (error.code === 'ECONNABORTED') {
-      return res.status(408).json({ 
-        success: false, 
-        error: 'Request timeout - The website took too long to respond' 
-      });
-    } else if (error.response) {
-      return res.status(error.response.status).json({ 
-        success: false, 
-        error: `Website returned error: ${error.response.status} ${error.response.statusText}` 
-      });
-    } else if (error.request) {
-      return res.status(503).json({ 
-        success: false, 
-        error: 'Cannot connect to the website. It may be down or blocking our requests.' 
-      });
-    } else {
-      return res.status(500).json({ 
-        success: false, 
-        error: 'An unexpected error occurred while scraping the website' 
-      });
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+      userMessage = 'Website took too long to respond. Please try again.';
+    } else if (error.message.includes('Failed to fetch') || error.message.includes('fetch failed')) {
+      userMessage = 'Cannot connect to the website. It may be down or blocking our requests.';
+    } else if (error.message.includes('Invalid URL')) {
+      userMessage = 'Please enter a valid website URL.';
+    } else if (error.message.includes('HTTP error')) {
+      userMessage = 'Website returned an error. It may be blocking automated requests.';
     }
+
+    res.status(500).json({
+      success: false,
+      error: userMessage,
+      technicalError: error.message
+    });
   }
 }
