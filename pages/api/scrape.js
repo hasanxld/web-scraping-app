@@ -1,9 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
-// Premium proxy configuration
 const PROXY_CONFIG = {
-  // Using multiple free CORS proxies as fallback
   proxies: [
     {
       name: 'cors-anywhere',
@@ -19,7 +17,6 @@ const PROXY_CONFIG = {
     }
   ],
   
-  // Direct request with premium headers
   directHeaders: {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -40,7 +37,6 @@ const PROXY_CONFIG = {
 
 async function tryDirectRequest(url) {
   try {
-    console.log('🔄 Trying direct request...');
     const response = await axios({
       method: 'GET',
       url: url,
@@ -52,14 +48,12 @@ async function tryDirectRequest(url) {
     });
     return { success: true, data: response.data, method: 'direct' };
   } catch (error) {
-    console.log('❌ Direct request failed:', error.message);
     return { success: false, error: error.message };
   }
 }
 
 async function tryProxyRequest(url, proxy) {
   try {
-    console.log(`🔄 Trying ${proxy.name} proxy...`);
     const proxyUrl = proxy.url(url);
     const response = await axios({
       method: 'GET',
@@ -72,32 +66,26 @@ async function tryProxyRequest(url, proxy) {
     });
     return { success: true, data: response.data, method: proxy.name };
   } catch (error) {
-    console.log(`❌ ${proxy.name} proxy failed:`, error.message);
     return { success: false, error: error.message };
   }
 }
 
 async function scrapeWithFallback(url) {
-  // Try direct request first (fastest)
   const directResult = await tryDirectRequest(url);
   if (directResult.success) {
     return directResult;
   }
 
-  // Try each proxy in sequence
   for (const proxy of PROXY_CONFIG.proxies) {
     const proxyResult = await tryProxyRequest(url, proxy);
     if (proxyResult.success) {
       return proxyResult;
     }
     
-    // Small delay between proxy attempts
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  // Final fallback - simple request with minimal headers
   try {
-    console.log('🔄 Trying final fallback...');
     const response = await axios({
       method: 'GET',
       url: url,
@@ -113,7 +101,6 @@ async function scrapeWithFallback(url) {
 }
 
 export default async function handler(req, res) {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -135,28 +122,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Validate and format URL
     let targetUrl = url.trim();
     if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
       targetUrl = 'https://' + targetUrl;
     }
 
-    const urlObj = new URL(targetUrl);
+    new URL(targetUrl);
 
-    // Scrape with fallback methods
     const scrapeResult = await scrapeWithFallback(targetUrl);
     
     if (!scrapeResult.success) {
       throw new Error(`All scraping methods failed: ${scrapeResult.error}`);
     }
 
-    // Parse HTML with Cheerio
     const $ = cheerio.load(scrapeResult.data);
 
-    // Remove unwanted elements but keep basic structure
     $('script, style, noscript, meta, link, svg, iframe, form, input, button, nav, footer, header').remove();
 
-    // Clean up HTML - remove empty elements and excessive whitespace
     $('*').each(function() {
       const $el = $(this);
       if ($el.children().length === 0 && $el.text().trim() === '') {
@@ -164,13 +146,11 @@ export default async function handler(req, res) {
       }
     });
 
-    // Get cleaned HTML content only (no text, links, images)
     const cleanedHtml = $.html()
       .replace(/\s+/g, ' ')
       .replace(/>\s+</g, '><')
       .trim();
 
-    // Extract basic page info
     const title = $('title').text() || 'No title found';
     const description = $('meta[name="description"]').attr('content') || 'No description found';
 
@@ -180,7 +160,7 @@ export default async function handler(req, res) {
         url: targetUrl,
         title,
         description,
-        html: cleanedHtml.substring(0, 100000), // Limit HTML size
+        html: cleanedHtml.substring(0, 100000),
         scrapedAt: new Date().toISOString(),
         method: scrapeResult.method,
         contentLength: cleanedHtml.length
@@ -188,9 +168,6 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('🎯 Final scraping error:', error.message);
-
-    // User-friendly error messages
     let userMessage = 'Failed to scrape website';
     
     if (error.message.includes('blocked') || error.message.includes('403')) {
@@ -213,4 +190,4 @@ export default async function handler(req, res) {
       technicalError: error.message
     });
   }
-      }
+}
