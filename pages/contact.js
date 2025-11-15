@@ -27,7 +27,6 @@ export default function Contact() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
     setTimeout(() => {
       setIsSubmitting(false);
       setSubmitStatus('success');
@@ -181,4 +180,4 @@ export default function Contact() {
       <Footer />
     </>
   );
-                          }
+                                    }
