@@ -13,7 +13,11 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "cheerio": "1.0.0-rc.12",
-    "axios": "1.5.0"
+    "axios": "1.5.0",
+    "puppeteer-core": "21.5.2",
+    "chrome-aws-lambda": "10.1.0",
+    "proxy-chain": "2.4.0",
+    "user-agents": "1.0.959"
   },
   "devDependencies": {
     "autoprefixer": "10.4.16",
