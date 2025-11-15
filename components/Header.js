@@ -1,27 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useTheme } from './ThemeProvider';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="w-32 h-8 bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-          <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-        </div>
-      </header>
-    );
-  }
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
@@ -94,4 +78,4 @@ export default function Header() {
       )}
     </header>
   );
-        }
+                }
