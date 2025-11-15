@@ -59,7 +59,6 @@ export default function ScrapingTool() {
     }
   };
 
-  // Popular website suggestions
   const popularSites = [
     { name: 'Example', url: 'https://example.com' },
     { name: 'HTTPBin', url: 'https://httpbin.org/html' },
@@ -102,7 +101,6 @@ export default function ScrapingTool() {
                 </button>
               </div>
               
-              {/* Popular Sites Quick Links */}
               <div className="mt-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Try these popular sites:</p>
                 <div className="flex flex-wrap gap-2">
@@ -150,7 +148,6 @@ export default function ScrapingTool() {
             
             {result && (
               <div className="space-y-6">
-                {/* Success Message */}
                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4">
                   <div className="flex items-center">
                     <i className="ri-checkbox-circle-line text-green-500 text-xl mr-2"></i>
@@ -165,7 +162,6 @@ export default function ScrapingTool() {
                   </div>
                 </div>
 
-                {/* Website Info */}
                 <div className="bg-gray-50 dark:bg-gray-700 p-4">
                   <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-white">Website Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -188,7 +184,6 @@ export default function ScrapingTool() {
                   </div>
                 </div>
 
-                {/* HTML Content */}
                 <div className="border border-gray-200 dark:border-gray-600">
                   <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                     <div>
@@ -224,7 +219,6 @@ export default function ScrapingTool() {
                   />
                 </div>
 
-                {/* Preview */}
                 <div className="border border-gray-200 dark:border-gray-600">
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Live Preview</h3>
@@ -241,7 +235,6 @@ export default function ScrapingTool() {
             )}
           </div>
 
-          {/* Features */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div className="bg-white dark:bg-gray-800 p-6 shadow-md">
               <div className="text-blue-600 dark:text-blue-400 mb-4">
@@ -271,4 +264,4 @@ export default function ScrapingTool() {
       </div>
     </section>
   );
-    }
+                  }
