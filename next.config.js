@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
+  // Remove experimental.appDir as it's now default
   async headers() {
     return [
       {
@@ -23,18 +21,6 @@ const nextConfig = {
         ]
       }
     ]
-  },
-  // Remove any problematic options
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-      };
-    }
-    return config;
   }
 }
 
