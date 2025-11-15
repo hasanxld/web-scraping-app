@@ -38,22 +38,34 @@ export default function ScrapingTool() {
     }
   };
 
-  const copyToClipboard = (content) => {
-    navigator.clipboard.writeText(content);
-    alert('Copied to clipboard!');
+  const copyToClipboard = () => {
+    if (result?.html) {
+      navigator.clipboard.writeText(result.html);
+      alert('✅ HTML copied to clipboard!');
+    }
   };
 
-  const downloadContent = (content, filename) => {
-    const blob = new Blob([content], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const downloadHTML = () => {
+    if (result?.html) {
+      const blob = new Blob([result.html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `scraped-${new Date().getTime()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   };
+
+  // Popular website suggestions
+  const popularSites = [
+    { name: 'Example', url: 'https://example.com' },
+    { name: 'HTTPBin', url: 'https://httpbin.org/html' },
+    { name: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Web_scraping' },
+    { name: 'GitHub', url: 'https://github.com' }
+  ];
 
   return (
     <section id="tool" className="py-16 bg-gray-50 dark:bg-gray-900">
@@ -85,23 +97,51 @@ export default function ScrapingTool() {
                       Scraping...
                     </>
                   ) : (
-                    'Scrape Data'
+                    'Scrape HTML'
                   )}
                 </button>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Try popular sites like: example.com, httpbin.org, or any public website
-              </p>
+              
+              {/* Popular Sites Quick Links */}
+              <div className="mt-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Try these popular sites:</p>
+                <div className="flex flex-wrap gap-2">
+                  {popularSites.map((site, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setUrl(site.url)}
+                      className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 transition-colors"
+                    >
+                      {site.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </form>
+            
+            {loading && (
+              <div className="text-center py-12">
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <div className="circular-loader"></div>
+                  <div className="text-center">
+                    <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">Scraping website HTML...</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Using premium proxy system to bypass blocks
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 mb-4">
-                <div className="flex items-center">
-                  <i className="ri-error-warning-line text-red-500 text-xl mr-2"></i>
+                <div className="flex items-start">
+                  <i className="ri-error-warning-line text-red-500 text-xl mr-3 mt-0.5"></i>
                   <div>
                     <p className="text-red-800 dark:text-red-200 font-semibold">{error}</p>
-                    <p className="text-red-600 dark:text-red-300 text-sm mt-1">
-                      Tip: Try a different website or check if the URL is correct.
+                    <p className="text-red-600 dark:text-red-300 text-sm mt-2">
+                      💡 <strong>Tips:</strong> Try a different website, check if the URL is correct, or wait a moment and try again.
                     </p>
                   </div>
                 </div>
@@ -110,6 +150,21 @@ export default function ScrapingTool() {
             
             {result && (
               <div className="space-y-6">
+                {/* Success Message */}
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4">
+                  <div className="flex items-center">
+                    <i className="ri-checkbox-circle-line text-green-500 text-xl mr-2"></i>
+                    <div>
+                      <p className="text-green-800 dark:text-green-200 font-semibold">
+                        ✅ Successfully scraped HTML content!
+                      </p>
+                      <p className="text-green-700 dark:text-green-300 text-sm">
+                        Method used: <span className="font-mono bg-green-100 dark:bg-green-800 px-2 py-1">{result.method}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Website Info */}
                 <div className="bg-gray-50 dark:bg-gray-700 p-4">
                   <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-white">Website Information</h3>
@@ -127,128 +182,93 @@ export default function ScrapingTool() {
                       <span className="text-gray-800 dark:text-white">{result.description}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-semibold text-gray-600 dark:text-gray-300">Content Length:</span>
+                      <span className="font-semibold text-gray-600 dark:text-gray-300">Content Size:</span>
                       <span className="text-gray-800 dark:text-white">{result.contentLength} characters</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Text Content */}
-                <div className="border border-gray-200 dark:border-gray-600">
-                  <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Text Content</h3>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => copyToClipboard(result.text)}
-                        className="p-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors text-gray-700 dark:text-gray-300"
-                        title="Copy text"
-                      >
-                        <i className="ri-file-copy-line"></i>
-                      </button>
-                      <button 
-                        onClick={() => downloadContent(result.text, 'scraped-text.txt')}
-                        className="p-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors text-gray-700 dark:text-gray-300"
-                        title="Download text"
-                      >
-                        <i className="ri-download-line"></i>
-                      </button>
-                    </div>
-                  </div>
-                  <textarea 
-                    value={result.text} 
-                    readOnly
-                    className="w-full h-40 p-4 border-0 bg-white dark:bg-gray-800 dark:text-white focus:outline-none resize-none overflow-auto text-sm"
-                  />
-                </div>
-
                 {/* HTML Content */}
                 <div className="border border-gray-200 dark:border-gray-600">
                   <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">HTML Content</h3>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white">HTML Content</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Clean HTML extracted from the website
+                      </p>
+                    </div>
                     <div className="flex space-x-2">
                       <button 
-                        onClick={() => copyToClipboard(result.html)}
-                        className="p-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors text-gray-700 dark:text-gray-300"
+                        onClick={copyToClipboard}
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white transition-colors"
                         title="Copy HTML"
                       >
                         <i className="ri-file-copy-line"></i>
+                        <span>Copy</span>
                       </button>
                       <button 
-                        onClick={() => downloadContent(result.html, 'scraped-html.html')}
-                        className="p-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors text-gray-700 dark:text-gray-300"
+                        onClick={downloadHTML}
+                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white transition-colors"
                         title="Download HTML"
                       >
                         <i className="ri-download-line"></i>
+                        <span>Download</span>
                       </button>
                     </div>
                   </div>
                   <textarea 
                     value={result.html} 
                     readOnly
-                    className="w-full h-96 p-4 border-0 bg-white dark:bg-gray-800 dark:text-white focus:outline-none resize-none overflow-auto font-mono text-xs"
+                    className="w-full h-96 p-4 border-0 bg-white dark:bg-gray-800 dark:text-white focus:outline-none resize-none overflow-auto font-mono text-xs leading-relaxed"
+                    placeholder="HTML content will appear here..."
                   />
                 </div>
 
-                {/* Links & Images */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border border-gray-200 dark:border-gray-600">
-                    <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                        Found Links ({result.links.length})
-                      </h3>
-                    </div>
-                    <div className="max-h-60 overflow-y-auto p-4 bg-white dark:bg-gray-800">
-                      {result.links.length > 0 ? (
-                        result.links.map((link, index) => (
-                          <div key={index} className="mb-3 pb-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                            <a 
-                              href={link.href} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="text-blue-600 dark:text-blue-400 hover:underline break-all text-sm font-medium"
-                            >
-                              {link.text || 'No text'}
-                            </a>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
-                              {link.href}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-gray-500 dark:text-gray-400 text-sm">No links found</p>
-                      )}
-                    </div>
+                {/* Preview */}
+                <div className="border border-gray-200 dark:border-gray-600">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Live Preview</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      How the HTML looks when rendered (basic styling)
+                    </p>
                   </div>
-
-                  <div className="border border-gray-200 dark:border-gray-600">
-                    <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                        Found Images ({result.images.length})
-                      </h3>
-                    </div>
-                    <div className="max-h-60 overflow-y-auto p-4 bg-white dark:bg-gray-800">
-                      {result.images.length > 0 ? (
-                        result.images.map((image, index) => (
-                          <div key={index} className="mb-3 pb-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                            <div className="text-xs text-blue-600 dark:text-blue-400 break-all mb-1">
-                              {image.src}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              Alt: {image.alt}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-gray-500 dark:text-gray-400 text-sm">No images found</p>
-                      )}
-                    </div>
-                  </div>
+                  <div 
+                    className="w-full h-64 p-4 bg-white dark:bg-gray-800 overflow-auto"
+                    dangerouslySetInnerHTML={{ __html: result.html }}
+                  />
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Features */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div className="bg-white dark:bg-gray-800 p-6 shadow-md">
+              <div className="text-blue-600 dark:text-blue-400 mb-4">
+                <i className="ri-shield-keyhole-line text-3xl"></i>
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Proxy Bypass</h3>
+              <p className="text-gray-600 dark:text-gray-400">Advanced proxy system to bypass website blocks and restrictions</p>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 p-6 shadow-md">
+              <div className="text-blue-600 dark:text-blue-400 mb-4">
+                <i className="ri-braces-line text-3xl"></i>
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Clean HTML</h3>
+              <p className="text-gray-600 dark:text-gray-400">Get clean, structured HTML content without scripts and styles</p>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 p-6 shadow-md">
+              <div className="text-blue-600 dark:text-blue-400 mb-4">
+                <i className="ri-zap-line text-3xl"></i>
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Fast & Reliable</h3>
+              <p className="text-gray-600 dark:text-gray-400">Multiple fallback methods ensure successful scraping</p>
+            </div>
           </div>
         </div>
       </div>
     </section>
   );
-}
+    }
