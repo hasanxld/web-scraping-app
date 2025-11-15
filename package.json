@@ -13,8 +13,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "cheerio": "1.0.0-rc.12",
-    "axios": "1.5.0",
-    "lucide-react": "0.292.0"
+    "axios": "1.5.0"
   },
   "devDependencies": {
     "autoprefixer": "10.4.16",
